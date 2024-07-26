@@ -39,20 +39,24 @@
     <script>
         async function fetchData() {
             // Replace this URL with the raw URL of your test_database.db file on GitHub
-            const dbUrl = 'https://raw.githubusercontent.com/kettupon/db/main/test_database.db';
+            const dbUrl = 'https://raw.githubusercontent.com/kettupon/test/main/test_database.db';
 
             try {
+                // Fetch the .db file
                 const response = await fetch(dbUrl);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const arrayBuffer = await response.arrayBuffer();
                 const uInt8Array = new Uint8Array(arrayBuffer);
 
+                // Initialize SQL.js
                 const SQL = await initSqlJs({ locateFile: fileName => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.5.0/${fileName}` });
                 const db = new SQL.Database(uInt8Array);
 
+                // Get the list of tables in the database
                 const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table';");
 
                 if (tables.length > 0 && tables[0].values.length > 0) {
+                    // Use the first table found
                     const tableName = tables[0].values[0][0];
                     const data = db.exec(`SELECT * FROM ${tableName};`);
 
@@ -60,6 +64,7 @@
                         const columns = data[0].columns;
                         const values = data[0].values;
 
+                        // Build the HTML table
                         let tableHTML = '<table><thead><tr>';
                         columns.forEach(col => {
                             tableHTML += `<th>${col}</th>`;
