@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLite Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.5.0/sql-wasm.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+        button {
+            margin-top: 20px;
+        }
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+    <button onclick="fetchData()">Connect Online</button>
+    <div id="tableContainer"></div>
+
+    <script>
+        async function fetchData() {
+            // Replace this URL with the raw URL of your test_database.db file on GitHub
+            const dbUrl = 'https://raw.githubusercontent.com/kettupon/db/main/test_database.db';
+
+            try {
+                const response = await fetch(dbUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const arrayBuffer = await response.arrayBuffer();
+                const uInt8Array = new Uint8Array(arrayBuffer);
+
+                const SQL = await initSqlJs({ locateFile: fileName => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.5.0/${fileName}` });
+                const db = new SQL.Database(uInt8Array);
+
+                const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table';");
+
+                if (tables.length > 0 && tables[0].values.length > 0) {
+                    const tableName = tables[0].values[0][0];
+                    const data = db.exec(`SELECT * FROM ${tableName};`);
+
+                    if (data.length > 0) {
+                        const columns = data[0].columns;
+                        const values = data[0].values;
+
+                        let tableHTML = '<table><thead><tr>';
+                        columns.forEach(col => {
+                            tableHTML += `<th>${col}</th>`;
+                        });
+                        tableHTML += '</tr></thead><tbody>';
+
+                        values.forEach(row => {
+                            tableHTML += '<tr>';
+                            row.forEach(val => {
+                                tableHTML += `<td>${val}</td>`;
+                            });
+                            tableHTML += '</tr>';
+                        });
+                        tableHTML += '</tbody></table>';
+
+                        document.getElementById('tableContainer').innerHTML = tableHTML;
+                    } else {
+                        document.getElementById('tableContainer').innerHTML = 'No data found in the database.';
+                    }
+                } else {
+                    document.getElementById('tableContainer').innerHTML = 'No tables found in the database.';
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                document.getElementById('tableContainer').innerHTML = 'Error fetching the database.';
+            }
+        }
+    </script>
+
+</body>
+</html>
